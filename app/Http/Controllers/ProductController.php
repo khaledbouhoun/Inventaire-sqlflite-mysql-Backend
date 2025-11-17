@@ -81,11 +81,11 @@ class ProductController extends Controller
         }
 
         $product->update([
-            'prd_nom' => $request->prd_nom,
+            // 'prd_nom' => $request->prd_nom,
             'prd_qr' => $request->prd_qr,
         ]);
 
-        return response()->json($product);
+        return response()->json($product,201);
     }
 
     // Delete product
