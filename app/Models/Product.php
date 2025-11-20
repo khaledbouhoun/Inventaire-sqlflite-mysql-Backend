@@ -27,4 +27,10 @@ class Product extends Model
         'prd_nom' => 'string',
 
     ];
+
+    // Relations
+    public function gestqrs()
+    {
+        return $this->hasMany(Gestqr::class, 'gqr_prd_no', 'prd_no');
+    }
 }

@@ -8,15 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('products', function (Blueprint $table) {
-            $table->string('prd_no')->primary();
-            $table->string('prd_nom');
-            $table->text('prd_qr')->nullable();
+        Schema::create('lemplacement', function (Blueprint $table) {
+            $table->id('lemp_no'); // primary key
+            $table->string('lemp_nom');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('products');
+        Schema::dropIfExists('lemplacement');
     }
 };

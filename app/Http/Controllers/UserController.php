@@ -11,22 +11,35 @@ class UserController extends Controller
 
     public function index()
     {
-        $users = User::all();
+        $users = User::with('lemplacement')->get()
+            ->map(function ($u) {
+                return [
+                    'usr_no' => $u->usr_no,
+                    'usr_nom' => $u->usr_nom,
+                    'usr_pntg' => $u->usr_pntg,
+                    'usr_lemp' => $u->usr_lemp,
+                    'usr_lemp_nom' => $u->lemplacement->lemp_nom ?? null, // ← Show Emplacement name
+                ];
+            });
+
         return response()->json($users);
     }
+
     // ✅ Register
     public function register(Request $request)
     {
         $request->validate([
             'usr_nom' => 'required|string',
             'usr_pas' => 'required|string|min:3',
+            'usr_pntg' => 'nullable|integer',
+            'usr_lemp' => 'nullable|integer',
         ]);
 
         $user = User::create([
             'usr_nom' => $request->usr_nom,
             'usr_pas' => Hash::make($request->usr_pas),
             'usr_pntg' => $request->usr_pntg,
-            'usr_dpot' => $request->usr_dpot,
+            'usr_lemp' => $request->usr_lemp,
         ]);
 
         return response()->json([
@@ -57,10 +70,10 @@ class UserController extends Controller
         }
 
         return response()->json([
-            'usr_id' => $user->usr_id,
+            'usr_no' => $user->usr_no,
             'usr_nom' => $user->usr_nom,
             'usr_pntg' => $user->usr_pntg,
-            'usr_dpot' => $user->usr_dpot,
+            'usr_lemp' => $user->usr_lemp,
             'remember_token' => $user->remember_token,
         ]);
     }
@@ -77,10 +90,10 @@ class UserController extends Controller
         }
 
         return response()->json([
-            'usr_id' => $user->usr_id,
+            'usr_no' => $user->usr_no,
             'usr_nom' => $user->usr_nom,
             'usr_pntg' => $user->usr_pntg,
-            'usr_dpot' => $user->usr_dpot,
+            'usr_lemp' => $user->usr_lemp,
         ]);
     }
 
@@ -100,9 +113,9 @@ class UserController extends Controller
     }
 
     // Update pointage
-    public function updatePointage(Request $request, $usr_id)
+    public function updatePointage(Request $request, $usr_no)
     {
-        $user = User::find($usr_id);
+        $user = User::find($usr_no);
         if (!$user) {
             return response()->json(['message' => 'User not found'], 404);
         }
@@ -112,26 +125,26 @@ class UserController extends Controller
 
         return response()->json([
             'message' => 'Pointage updated',
-            'usr_id' => $user->usr_id,
+            'usr_no' => $user->usr_no,
             'usr_pntg' => $user->usr_pntg
         ]);
     }
 
     // Update depot
-    public function updateDepot(Request $request, $usr_id)
+    public function updateDepot(Request $request, $usr_no)
     {
-        $user = User::find($usr_id);
+        $user = User::find($usr_no);
         if (!$user) {
             return response()->json(['message' => 'User not found'], 404);
         }
 
-        $user->usr_dpot = $request->usr_dpot; // new depot value
+        $user->usr_lemp = $request->usr_lemp; // new depot value
         $user->save();
 
         return response()->json([
             'message' => 'Depot updated',
-            'usr_id' => $user->usr_id,
-            'usr_dpot' => $user->usr_dpot
+            'usr_no' => $user->usr_no,
+            'usr_lemp' => $user->usr_lemp
         ]);
     }
 }
