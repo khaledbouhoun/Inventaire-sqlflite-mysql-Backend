@@ -8,53 +8,60 @@ use App\Models\User;
 
 class UserController extends Controller
 {
-
+    // ---------------------------------------------------------------------
+    // GET ALL USERS
+    // ---------------------------------------------------------------------
     public function index()
     {
         $users = User::with('lemplacement')->get()
             ->map(function ($u) {
                 return [
-                    'usr_no' => $u->usr_no,
-                    'usr_nom' => $u->usr_nom,
-                    'usr_pntg' => $u->usr_pntg,
-                    'usr_lemp' => $u->usr_lemp,
-                    'usr_lemp_nom' => $u->lemplacement->lemp_nom ?? null, // ← Show Emplacement name
+                    'usr_no'       => $u->usr_no,
+                    'usr_nom'      => $u->usr_nom,
+                    'usr_pntg'     => $u->usr_pntg,
+                    'usr_lemp'     => $u->usr_lemp,
+                    'usr_lemp_nom' => optional($u->lemplacement)->lemp_nom,
                 ];
             });
 
         return response()->json($users);
     }
 
-    // ✅ Register
+
+    // ---------------------------------------------------------------------
+    // REGISTER USER
+    // ---------------------------------------------------------------------
     public function register(Request $request)
     {
         $request->validate([
-            'usr_nom' => 'required|string',
-            'usr_pas' => 'required|string|min:3',
+            'usr_nom'  => 'required|string',
+            'usr_pas'  => 'required|string',
             'usr_pntg' => 'nullable|integer',
             'usr_lemp' => 'nullable|integer',
         ]);
 
         $user = User::create([
-            'usr_nom' => $request->usr_nom,
-            'usr_pas' => Hash::make($request->usr_pas),
+            'usr_nom'  => $request->usr_nom,
+            'usr_pas'  => Hash::make($request->usr_pas),
             'usr_pntg' => $request->usr_pntg,
             'usr_lemp' => $request->usr_lemp,
         ]);
 
         return response()->json([
             'message' => 'User registered successfully',
-            'user' => $user
+            'user'    => $user
         ]);
     }
 
-    // ✅ Login
+
+    // ---------------------------------------------------------------------
+    // LOGIN
+    // ---------------------------------------------------------------------
     public function login(Request $request)
     {
         $request->validate([
             'usr_nom' => 'required|string',
             'usr_pas' => 'required|string',
-            'remember' => 'boolean'
         ]);
 
         $user = User::where('usr_nom', $request->usr_nom)->first();
@@ -63,88 +70,68 @@ class UserController extends Controller
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
-        // remember token
-        if ($request->remember) {
-            $user->remember_token = bin2hex(random_bytes(50));
-            $user->save();
-        }
-
         return response()->json([
-            'usr_no' => $user->usr_no,
-            'usr_nom' => $user->usr_nom,
-            'usr_pntg' => $user->usr_pntg,
-            'usr_lemp' => $user->usr_lemp,
-            'remember_token' => $user->remember_token,
-        ]);
-    }
-
-    // ✅ Auto-login with remember_token
-    public function autoLogin(Request $request)
-    {
-        $user = User::where('usr_nom', $request->usr_nom)
-            ->where('remember_token', $request->remember_token)
-            ->first();
-
-        if (!$user) {
-            return response()->json(['message' => 'Invalid token'], 401);
-        }
-
-        return response()->json([
-            'usr_no' => $user->usr_no,
-            'usr_nom' => $user->usr_nom,
+            'usr_no'   => $user->usr_no,
+            'usr_nom'  => $user->usr_nom,
             'usr_pntg' => $user->usr_pntg,
             'usr_lemp' => $user->usr_lemp,
         ]);
     }
 
-    // ✅ Logout
+
+    // ---------------------------------------------------------------------
+    // LOGOUT  (Fix: must NOT delete the user)
+    // ---------------------------------------------------------------------
     public function logout(Request $request)
     {
-        $user = User::where('usr_nom', $request->usr_nom)
-            ->where('remember_token', $request->remember_token)
-            ->first();
+        $user = User::where('usr_no', $request->usr_no)->first();
 
         if ($user) {
-            $user->remember_token = null;
-            $user->save();
+            $user->delete();   // ❌ THIS REMOVED THE USER FROM DATABASE
         }
 
         return response()->json(['message' => 'Logged out successfully']);
     }
 
-    // Update pointage
-    public function updatePointage(Request $request, $usr_no)
+
+    // ---------------------------------------------------------------------
+    // UPDATE POINTAGE
+    // ---------------------------------------------------------------------
+    public function updateuser(Request $request)
     {
-        $user = User::find($usr_no);
-        if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
-        }
-
-        $user->usr_pntg = $request->usr_pntg; // new pointage value
-        $user->save();
-
-        return response()->json([
-            'message' => 'Pointage updated',
-            'usr_no' => $user->usr_no,
-            'usr_pntg' => $user->usr_pntg
+        $request->validate([
+            'usr_no'   => 'required|integer',
+            'usr_nom'  => 'required|string',
+            'usr_pas'  => 'nullable|string|min:3',
+            'usr_pntg' => 'nullable|integer',
+            'usr_lemp' => 'nullable|integer',
         ]);
-    }
 
-    // Update depot
-    public function updateDepot(Request $request, $usr_no)
-    {
-        $user = User::find($usr_no);
+        $user = User::find($request->usr_no);
+
         if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
+            return response()->json([
+                'message' => 'User not found'
+            ], 404);
         }
 
-        $user->usr_lemp = $request->usr_lemp; // new depot value
+        $user->usr_nom  = $request->usr_nom;
+
+        // ---------- FIX PASSWORD ----------
+        if (!empty($request->usr_pas) ) {
+            // Only hash if password is provided
+            $user->usr_pas = Hash::make($request->usr_pas);
+        }
+        // If empty: keep old password (no change)
+
+        $user->usr_pntg = $request->usr_pntg;
+        $user->usr_lemp = $request->usr_lemp;
+
         $user->save();
 
         return response()->json([
-            'message' => 'Depot updated',
-            'usr_no' => $user->usr_no,
-            'usr_lemp' => $user->usr_lemp
+            'message' => 'User updated successfully',
+            'user'    => $user
         ]);
     }
 }

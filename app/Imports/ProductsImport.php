@@ -5,51 +5,54 @@ namespace App\Imports;
 use App\Models\Product;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Illuminate\Support\Facades\Validator;
+
 use Maatwebsite\Excel\Concerns\SkipsOnError;
 use Throwable;
 
-class ProductsImport implements ToModel, WithHeadingRow, SkipsOnError
+class ProductsImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnError
 {
     public $results = [];
 
     public function model(array $row)
     {
+        $productCode = $row['code'] ?? null;
+        $productName = $row['designation'] ?? null;
+
         try {
-            // Check for null/empty values
-            if (empty($row['id']) || empty($row['nom'])) {
+            if (empty($productCode) || empty($productName)) {
                 $this->results[] = [
-                    'prd_no' => (string)($row['id'] ?? ''),
-                    'prd_nom' => (string)($row['nom'] ?? ''),
-                    'reason' => 'Missing ID or name',
+                    'prd_no' => (string)($productCode ?? ''),
+                    'prd_nom' => (string)($productName ?? ''),
+                    'reason' => 'Missing Code or Designation',
                     'status' => 'failed'
                 ];
                 return null;
             }
 
-            // Check if product already exists with same id and name
-            $existing = Product::where('prd_no', $row['id'])
-                ->where('prd_nom', $row['nom'])
+            $existing = Product::where('prd_no', $productCode)
+                ->where('prd_nom', $productName)
                 ->first();
 
             if ($existing) {
                 $this->results[] = [
-                    'prd_no' => (string)$row['id'],
-                    'prd_nom' => (string)$row['nom'],
+                    'prd_no' => (string)$productCode,
+                    'prd_nom' => (string)$productName,
                     'reason' => 'Already exists',
                     'status' => 'skipped'
                 ];
                 return null;
             }
 
-            // Create new product
             $product = new Product([
-                'prd_no' => (string)$row['id'],
-                'prd_nom' => (string)$row['nom'],
+                'prd_no' => (string)$productCode,
+                'prd_nom' => (string)$productName,
             ]);
 
             $this->results[] = [
-                'prd_no' => (string)$row['id'],
-                'prd_nom' => (string)$row['nom'],
+                'prd_no' => (string)$productCode,
+                'prd_nom' => (string)$productName,
                 'reason' => 'Created successfully',
                 'status' => 'success'
             ];
@@ -57,8 +60,8 @@ class ProductsImport implements ToModel, WithHeadingRow, SkipsOnError
             return $product;
         } catch (Throwable $e) {
             $this->results[] = [
-                'prd_no' => (string)($row['id'] ?? ''),
-                'prd_nom' => (string)($row['nom'] ?? ''),
+                'prd_no' => (string)($productCode ?? ''),
+                'prd_nom' => (string)($productName ?? ''),
                 'reason' => $e->getMessage(),
                 'status' => 'failed'
             ];
@@ -69,5 +72,17 @@ class ProductsImport implements ToModel, WithHeadingRow, SkipsOnError
     public function onError(Throwable $e)
     {
         // Optional: log global errors
+    }
+
+    // Read 1000 rows at a time
+    public function chunkSize(): int
+    {
+        return 1000;
+    }
+
+    // Insert 100 records at once
+    public function batchSize(): int
+    {
+        return 100;
     }
 }

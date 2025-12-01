@@ -37,6 +37,8 @@ class Gestqr extends Model
         'gqr_lemp_nom',
         'gqr_usr_nom',
         'gqr_prd_nom',
+        'gqr_prd_qr',
+
     ];
 
 
@@ -76,5 +78,10 @@ class Gestqr extends Model
     public function getGqrPrdNomAttribute()
     {
         return $this->product ? $this->product->prd_nom : null;
+    }
+
+    public function getGqrPrdQrAttribute()
+    {
+        return $this->product ? $this->product->prd_qr : null;
     }
 }

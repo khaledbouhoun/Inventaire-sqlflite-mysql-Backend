@@ -7,7 +7,7 @@ use App\Models\Gestqr;
 use Illuminate\Support\Facades\DB;
 use Exception;
 
-class GestqrController extends Controller
+class GestQrController extends  Controller
 {
     // ----------------------------
     // 1️⃣ Get records (With Dynamic Filtering)
@@ -61,6 +61,7 @@ class GestqrController extends Controller
                     'gqr_usr_nom'  => $g->gqr_usr_nom,
                     'gqr_prd_no'   => $g->gqr_prd_no,
                     'gqr_prd_nom'  => $g->gqr_prd_nom,
+                    'gqr_prd_qr'  => $g->gqr_prd_qr,
                     'gqr_date'     => $g->gqr_date ? $g->gqr_date->toIso8601String() : null,
                 ];
             });
@@ -143,32 +144,35 @@ class GestqrController extends Controller
     // ----------------------------
     // 3️⃣ Show a single record
     // ----------------------------
-    public function show($lemp, $usr, $no)
-    {
-        $gestqr = Gestqr::where('gqr_lemp_no', $lemp)
-            ->where('gqr_usr_no', $usr)
-            ->where('gqr_no', $no)
-            ->with(['lemplacement', 'user', 'product'])
-            ->first();
+    public function show($lemp, $usr)
+{
+    $gestqr = Gestqr::where('gqr_lemp_no', $lemp)
+        ->where('gqr_usr_no', $usr)
+        ->with(['lemplacement', 'user', 'product'])
+        ->get();
 
-        if (!$gestqr) {
-            return response()->json(['message' => 'Record not found'], 404);
-        }
-
-        // Return only requested top-level fields (hide relation objects)
-        $payload = [
-            'gqr_no'       => $gestqr->gqr_no,
-            'gqr_lemp_no'  => $gestqr->gqr_lemp_no,
-            'gqr_lemp_nom' => $gestqr->gqr_lemp_nom,
-            'gqr_usr_no'   => $gestqr->gqr_usr_no,
-            'gqr_usr_nom'  => $gestqr->gqr_usr_nom,
-            'gqr_prd_no'   => $gestqr->gqr_prd_no,
-            'gqr_prd_nom'  => $gestqr->gqr_prd_nom,
-            'gqr_date'     => $gestqr->gqr_date ? $gestqr->gqr_date->toIso8601String() : null,
-        ];
-
-        return response()->json($payload);
+    if ($gestqr->isEmpty()) {
+        return response()->json(['message' => 'Record not found'], 404);
     }
+
+    // Transform each record into your payload format
+    $payload = $gestqr->map(function ($item) {
+        return [
+            'gqr_no'       => $item->gqr_no,
+            'gqr_lemp_no'  => $item->gqr_lemp_no,
+            'gqr_lemp_nom' => $item->gqr_lemp_nom,
+            'gqr_usr_no'   => $item->gqr_usr_no,
+            'gqr_usr_nom'  => $item->gqr_usr_nom,
+            'gqr_prd_no'   => $item->gqr_prd_no,
+            'gqr_prd_nom'  => $item->gqr_prd_nom,
+            'gqr_prd_qr'   => $item->gqr_prd_qr,
+            'gqr_date'     => $item->gqr_date ? $item->gqr_date->toIso8601String() : null,
+        ];
+    });
+
+    return response()->json($payload);
+}
+
 
     // ----------------------------
     // 4️⃣ Delete a record
