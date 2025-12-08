@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Gestqr extends Model
+class GestQr extends Model
 {
     protected $table = 'gestqr';
 

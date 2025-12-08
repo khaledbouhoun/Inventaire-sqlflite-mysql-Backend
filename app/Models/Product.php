@@ -33,4 +33,9 @@ class Product extends Model
     {
         return $this->hasMany(Gestqr::class, 'gqr_prd_no', 'prd_no');
     }
+
+    public function invontaies()
+    {
+        return $this->hasMany(Invontaie::class, 'inv_prd_no', 'prd_no');
+    }
 }

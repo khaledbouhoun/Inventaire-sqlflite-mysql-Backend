@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Gestqr;
+use App\Models\GestQr;
 use Illuminate\Support\Facades\DB;
 use Exception;
 
-class GestQrController extends  Controller
+class GestQrController extends Controller
 {
     // ----------------------------
     // 1️⃣ Get records (With Dynamic Filtering)
@@ -19,7 +19,7 @@ class GestQrController extends  Controller
     public function index(Request $request)
     {
         // Eager-load related models so accessors don't N+1 when serializing
-        $query = Gestqr::with(['lemplacement', 'user', 'product']);
+        $query = GestQr::with(['lemplacement', 'user', 'product']);
 
         // Filter by Emplacement
         if ($request->has('lemp_no')) {
@@ -54,15 +54,15 @@ class GestQrController extends  Controller
             ->get()
             ->map(function ($g) {
                 return [
-                    'gqr_no'       => $g->gqr_no,
-                    'gqr_lemp_no'  => $g->gqr_lemp_no,
+                    'gqr_no' => $g->gqr_no,
+                    'gqr_lemp_no' => $g->gqr_lemp_no,
                     'gqr_lemp_nom' => $g->gqr_lemp_nom,
-                    'gqr_usr_no'   => $g->gqr_usr_no,
-                    'gqr_usr_nom'  => $g->gqr_usr_nom,
-                    'gqr_prd_no'   => $g->gqr_prd_no,
-                    'gqr_prd_nom'  => $g->gqr_prd_nom,
-                    'gqr_prd_qr'  => $g->gqr_prd_qr,
-                    'gqr_date'     => $g->gqr_date ? $g->gqr_date->toIso8601String() : null,
+                    'gqr_usr_no' => $g->gqr_usr_no,
+                    'gqr_usr_nom' => $g->gqr_usr_nom,
+                    'gqr_prd_no' => $g->gqr_prd_no,
+                    'gqr_prd_nom' => $g->gqr_prd_nom,
+                    'gqr_prd_qr' => $g->gqr_prd_qr,
+                    'gqr_date' => $g->gqr_date ? $g->gqr_date->toIso8601String() : null,
                 ];
             });
 
@@ -82,14 +82,14 @@ class GestQrController extends  Controller
         // 1. Validate
         $validated = $request->validate([
             'gqr_lemp_no' => 'required|integer|exists:lemplacement,lemp_no',
-            'gqr_usr_no'  => 'required|integer|exists:users,usr_no',
-            'gqr_prd_no'  => 'required|string|exists:products,prd_no|max:255',
-            'gqr_date'    => 'nullable|date',
+            'gqr_usr_no' => 'required|integer|exists:users,usr_no',
+            'gqr_prd_no' => 'required|string|exists:products,prd_no|max:255',
+            'gqr_date' => 'nullable|date',
         ]);
 
         $lemp = $validated['gqr_lemp_no'];
-        $usr  = $validated['gqr_usr_no'];
-        $prd  = $validated['gqr_prd_no'];
+        $usr = $validated['gqr_usr_no'];
+        $prd = $validated['gqr_prd_no'];
         $date = $validated['gqr_date'] ?? now();
 
         try {
@@ -116,26 +116,26 @@ class GestQrController extends  Controller
                 }
 
                 // 4. Create Record
-                return Gestqr::create([
-                    'gqr_no'      => $nextNo,
+                return GestQr::create([
+                    'gqr_no' => $nextNo,
                     'gqr_lemp_no' => $lemp,
-                    'gqr_usr_no'  => $usr,
-                    'gqr_prd_no'  => $prd,
-                    'gqr_date'    => $date,
+                    'gqr_usr_no' => $usr,
+                    'gqr_prd_no' => $prd,
+                    'gqr_date' => $date,
                 ]);
             });
 
             return response()->json([
-                'status'  => 'success',
+                'status' => 'success',
                 'message' => 'Record created successfully',
-                'data'    => $gestqr,
+                'data' => $gestqr,
             ], 201);
         } catch (Exception $e) {
             // Return specific status code if set (like 409 conflict), else 400
             $status = $e->getCode() && is_int($e->getCode()) && $e->getCode() > 200 ? $e->getCode() : 400;
 
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => $e->getMessage(),
             ], $status);
         }
@@ -145,33 +145,33 @@ class GestQrController extends  Controller
     // 3️⃣ Show a single record
     // ----------------------------
     public function show($lemp, $usr)
-{
-    $gestqr = Gestqr::where('gqr_lemp_no', $lemp)
-        ->where('gqr_usr_no', $usr)
-        ->with(['lemplacement', 'user', 'product'])
-        ->get();
+    {
+        $gestqr = GestQr::where('gqr_lemp_no', $lemp)
+            ->where('gqr_usr_no', $usr)
+            ->with(['lemplacement', 'user', 'product'])
+            ->get();
 
-    if ($gestqr->isEmpty()) {
-        return response()->json(['message' => 'Record not found'], 404);
+        if ($gestqr->isEmpty()) {
+            return response()->json(['message' => 'Record not found'], 404);
+        }
+
+        // Transform each record into your payload format
+        $payload = $gestqr->map(function ($item) {
+            return [
+                'gqr_no' => $item->gqr_no,
+                'gqr_lemp_no' => $item->gqr_lemp_no,
+                'gqr_lemp_nom' => $item->gqr_lemp_nom,
+                'gqr_usr_no' => $item->gqr_usr_no,
+                'gqr_usr_nom' => $item->gqr_usr_nom,
+                'gqr_prd_no' => $item->gqr_prd_no,
+                'gqr_prd_nom' => $item->gqr_prd_nom,
+                'gqr_prd_qr' => $item->gqr_prd_qr,
+                'gqr_date' => $item->gqr_date ? $item->gqr_date->toIso8601String() : null,
+            ];
+        });
+
+        return response()->json($payload);
     }
-
-    // Transform each record into your payload format
-    $payload = $gestqr->map(function ($item) {
-        return [
-            'gqr_no'       => $item->gqr_no,
-            'gqr_lemp_no'  => $item->gqr_lemp_no,
-            'gqr_lemp_nom' => $item->gqr_lemp_nom,
-            'gqr_usr_no'   => $item->gqr_usr_no,
-            'gqr_usr_nom'  => $item->gqr_usr_nom,
-            'gqr_prd_no'   => $item->gqr_prd_no,
-            'gqr_prd_nom'  => $item->gqr_prd_nom,
-            'gqr_prd_qr'   => $item->gqr_prd_qr,
-            'gqr_date'     => $item->gqr_date ? $item->gqr_date->toIso8601String() : null,
-        ];
-    });
-
-    return response()->json($payload);
-}
 
 
     // ----------------------------
@@ -179,7 +179,7 @@ class GestQrController extends  Controller
     // ----------------------------
     public function destroy($lemp, $usr, $no)
     {
-        $deleted = Gestqr::where('gqr_lemp_no', $lemp)
+        $deleted = GestQr::where('gqr_lemp_no', $lemp)
             ->where('gqr_usr_no', $usr)
             ->where('gqr_no', $no)
             ->delete();
@@ -189,7 +189,7 @@ class GestQrController extends  Controller
         }
 
         return response()->json([
-            'status'  => 'success',
+            'status' => 'success',
             'message' => 'Record deleted successfully'
         ]);
     }

@@ -10,8 +10,6 @@ class Lemplacement extends Model
     use HasFactory;
 
     protected $table = 'lemplacement';
-
-
     protected $primaryKey = 'lemp_no';
     public $incrementing = true;
     protected $keyType = 'integer';
@@ -34,5 +32,10 @@ class Lemplacement extends Model
     public function users()
     {
         return $this->hasMany(User::class, 'usr_lemp', 'lemp_no');
+    }
+
+    public function invontaies()
+    {
+        return $this->hasMany(Invontaie::class, 'inv_lemp_no', 'lemp_no');
     }
 }

@@ -14,7 +14,6 @@ class User extends Authenticatable
     protected $keyType = 'integer';
     public $incrementing = true;
 
-    // يجب أن يكون true لأن لديك remember_token + timestamps في الجدول
     public $timestamps = true;
 
     protected $fillable = [
@@ -46,8 +45,23 @@ class User extends Authenticatable
         return $this->belongsTo(Lemplacement::class, 'usr_lemp', 'lemp_no');
     }
 
+    public function pointage()
+    {
+        return $this->belongsTo(Pointage::class, 'usr_pntg', 'pntg_no');
+    }
+
+    public function invontaies()
+    {
+        return $this->hasMany(Invontaie::class, 'inv_usr_no', 'usr_no');
+    }
+
     public function getUserLempNomAttribute()
     {
         return $this->lemplacement ? $this->lemplacement->lemp_nom : null;
+    }
+
+    public function getUserPntgNomAttribute()
+    {
+        return $this->pointage ? $this->pointage->pntg_nom : null;
     }
 }

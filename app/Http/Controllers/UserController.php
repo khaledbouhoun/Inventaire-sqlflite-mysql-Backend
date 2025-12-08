@@ -13,12 +13,13 @@ class UserController extends Controller
     // ---------------------------------------------------------------------
     public function index()
     {
-        $users = User::with('lemplacement')->get()
+        $users = User::with('lemplacement', 'pointage')->get()
             ->map(function ($u) {
                 return [
                     'usr_no'       => $u->usr_no,
                     'usr_nom'      => $u->usr_nom,
                     'usr_pntg'     => $u->usr_pntg,
+                    'usr_pntg_nom' => optional($u->pointage)->pntg_nom,
                     'usr_lemp'     => $u->usr_lemp,
                     'usr_lemp_nom' => optional($u->lemplacement)->lemp_nom,
                 ];
