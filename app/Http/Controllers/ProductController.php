@@ -13,13 +13,14 @@ use Maatwebsite\Excel\Facades\Excel; // <-- use Facade here
 class ProductController extends Controller
 {
     // Get all products
-    
-     public function index(){
+
+    public function index()
+    {
         $products = Product::all();
         return response()->json($products);
-     }
-    
-     public function limit(Request $request)
+    }
+
+    public function limit(Request $request)
     {
         $limit = (int) $request->query('limit', 100);
         $offset = (int) $request->query('offset', 0);
@@ -80,6 +81,8 @@ class ProductController extends Controller
             Excel::import($import, $request->file('file'));
             return response()->json([
                 'data' => $import->results,
+                // 'raw' => $import->rawRows,   // what Laravel actually read 
+
             ], 201);
         } catch (\Throwable $e) {
             return response()->json([
@@ -124,7 +127,7 @@ class ProductController extends Controller
             'prd_qr' => $request->prd_qr,
         ]);
 
-        return response()->json($product,201);
+        return response()->json($product, 201);
     }
 
     // Delete product
@@ -138,8 +141,8 @@ class ProductController extends Controller
         $product->delete();
         return response()->json(['message' => 'Product deleted successfully']);
     }
-    
-public function search($searchQuery)
+
+    public function search($searchQuery)
     {
         // 1. Récupérer la chaîne de recherche en utilisant la clé 'searchQuery'
         // Utilisation de trim() pour nettoyer les espaces superflus, y compris les guillemets.
@@ -158,7 +161,7 @@ public function search($searchQuery)
             if (!empty($fragments)) {
 
                 // Utilisation d'un groupe WHERE pour gérer la logique AND entre les fragments
-                 $query->where(function ($parent) use ($fragments) {
+                $query->where(function ($parent) use ($fragments) {
 
                     foreach ($fragments as $fragment) {
 

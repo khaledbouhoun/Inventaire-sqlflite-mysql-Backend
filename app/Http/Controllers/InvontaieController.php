@@ -53,32 +53,32 @@ class InvontaieController extends Controller
 
     public function filtering(Request $request)
     {
-        $query = Invontaie::with('lemplacement', 'pointage', 'user', 'product');
+        $query = Invontaie::query()
+            ->selectRaw('
+            inv_prd_no,
+            SUM(CASE WHEN inv_pntg_no = 1 THEN inv_qte ELSE 0 END) as sum_pntg_1,
+            SUM(CASE WHEN inv_pntg_no = 2 THEN inv_qte ELSE 0 END) as sum_pntg_2
+        ')
+            ->groupBy('inv_prd_no')
+            ->with('product');
 
         if ($request->filled('lemp_no')) {
             $query->where('inv_lemp_no', $request->lemp_no);
         }
 
+        $result = $query->get()->map(function ($item) {
+            return [
+                'invfiltr_prd_no' => $item->inv_prd_no,
+                'invfiltr_prd_nom' => optional($item->product)->prd_nom,
+                'invfiltr_pntg_1' => $item->sum_pntg_1,
+                'invfiltr_pntg_2' => $item->sum_pntg_2,
+                'invfiltr_diff' => abs($item->sum_pntg_1 - $item->sum_pntg_2),
+            ];
+        });
 
-        $invontaies = $query->get()
-            ->map(function (Invontaie $invontaie) {
-                return [
-                    'inv_no' => $invontaie->inv_no,
-                    'inv_lemp_no' => optional($invontaie->lemplacement)->lemp_no,
-                    'inv_lemp_nom' => optional($invontaie->lemplacement)->lemp_nom,
-                    'inv_pntg_no' => optional($invontaie->pointage)->pntg_no,
-                    'inv_pntg_nom' => optional($invontaie->pointage)->pntg_nom,
-                    'inv_usr_no' => optional($invontaie->user)->usr_no,
-                    'inv_usr_nom' => optional($invontaie->user)->usr_nom,
-                    'inv_prd_no' => optional($invontaie->product)->prd_no,
-                    'inv_prd_nom' => optional($invontaie->product)->prd_nom,
-                    'inv_exp' => $invontaie->inv_exp,
-                    'inv_qte' => $invontaie->inv_qte,
-                    'inv_date' => $invontaie->inv_date,
-                ];
-            });
-        return response()->json($invontaies);
+        return response()->json($result);
     }
+
 
     // ----------------------------
     // 2️⃣ Store a new Invontaie
